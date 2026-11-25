@@ -2,14 +2,14 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>콘텐츠 운영 대시보드</title>
-<link rel="preconnect" href="https://cdn.jsdelivr.net" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <style>
   :root {
-    --bg: #F4EFE6; --card: #FFFFFF; --ink: #111111; --sub: #6B665E; --line: #E3DDD2;
-    --lime: #D8FF3E; --green: #2E7D32; --soft: #FAF7F1;
+    --bg: #F4EFE6; --card: #FFFFFF; --ink: #111111; --sub: #6B665E; --line: #E3DDD2; --soft: #FAF7F1;
+    --lime: #D8FF3E; --red: #E5484D;
     --t-film: #FF8A65; --t-edit: #D8FF3E; --t-post: #4FC3F7; --t-guide: #CE93D8; --t-plan: #BDBDBD; --t-review: #FFD54F;
   }
   @media (prefers-color-scheme: dark) {
@@ -18,207 +18,510 @@
   :root[data-theme="dark"] { --bg: #141414; --card: #1E1E1E; --ink: #F2F2F2; --sub: #A3A3A3; --line: #2E2E2E; --soft: #191919; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--ink); font-family: Pretendard, "Noto Sans KR", system-ui, sans-serif; line-height: 1.5; -webkit-font-smoothing: antialiased; }
-  .wrap { max-width: 1040px; margin: 0 auto; padding: 20px 16px 80px; }
-  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
-  h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 18px 16px 90px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
   h1 em { font-style: normal; background: var(--lime); color: #111; padding: 0 8px; border-radius: 6px; }
   .meta { color: var(--sub); font-size: 13px; }
-  nav { display: flex; gap: 6px; overflow-x: auto; margin: 0 -16px 18px; padding: 0 16px; scrollbar-width: none; }
-  nav button { flex: none; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; font-weight: 700; font-size: 14px; padding: 9px 16px; border-radius: 999px; cursor: pointer; }
+  .pill { font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); white-space: nowrap; }
+  .pill.ok { background: var(--lime); color: #111; border-color: transparent; }
+  .pill.warn { background: #FFE08A; color: #111; border-color: transparent; }
+  .pill.err { background: var(--red); color: #fff; border-color: transparent; }
+  nav { display: flex; gap: 6px; overflow-x: auto; margin: 0 -16px 16px; padding: 0 16px 2px; scrollbar-width: none; }
+  nav::-webkit-scrollbar { display: none; }
+  nav button { flex: none; border: 1px solid var(--line); background: var(--card); font-weight: 700; font-size: 14px; padding: 9px 15px; border-radius: 999px; cursor: pointer; }
   nav button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .hidden { display: none !important; }
   .grid { display: grid; gap: 14px; }
-  @media (min-width: 760px) { .g2 { grid-template-columns: 1fr 1fr; } .g4 { grid-template-columns: repeat(4, 1fr); } }
   .g4 { grid-template-columns: repeat(2, 1fr); }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; }
-  .card h2 { font-size: 16px; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-  .big { font-size: 34px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.1; }
-  .stat .label { color: var(--sub); font-size: 13px; font-weight: 600; }
+  @media (min-width: 760px) { .g2 { grid-template-columns: 1fr 1fr; } .g4 { grid-template-columns: repeat(4, 1fr); } .g3 { grid-template-columns: repeat(3, 1fr); } }
+  .grid > *, .board > *, .days > *, .sheet > * { min-width: 0; }
+  html, body { overflow-x: hidden; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
+  .card h2 { font-size: 16px; font-weight: 800; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .big { font-size: 32px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.1; }
+  .label { color: var(--sub); font-size: 13px; font-weight: 600; }
   .bar { height: 8px; background: var(--soft); border: 1px solid var(--line); border-radius: 99px; overflow: hidden; margin-top: 10px; }
-  .bar i { display: block; height: 100%; background: var(--lime); border-right: 2px solid #111; }
-  .hero { background: #111111; color: #F4EFE6; border: 1px solid #2E2E2E; }
-  .hero .sub { color: var(--lime); font-weight: 800; font-size: 13px; letter-spacing: .04em; }
-  .hero .day { font-size: 28px; font-weight: 900; margin: 4px 0 12px; letter-spacing: -0.02em; }
-  .task { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--lime); }
+  .hero { background: #111; color: #F4EFE6; border-color: #2E2E2E; }
+  .hero .sub { color: var(--lime); font-weight: 800; font-size: 13px; }
+  .hero .day { font-size: 26px; font-weight: 900; margin: 2px 0 10px; letter-spacing: -0.02em; }
+  .task { display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; border-top: 1px solid var(--line); cursor: pointer; }
   .hero .task { border-color: #333; }
   .task:first-of-type { border-top: none; }
-  .task input { width: 22px; height: 22px; accent-color: #9BC400; flex: none; margin-top: 1px; cursor: pointer; }
-  .task.done span.t { text-decoration: line-through; opacity: .5; }
+  .task input { width: 21px; height: 21px; accent-color: #9BC400; flex: none; margin-top: 2px; cursor: pointer; }
+  .task.done .t { text-decoration: line-through; opacity: .5; }
   .type { flex: none; font-size: 12px; font-weight: 800; padding: 2px 9px; border-radius: 99px; color: #111; margin-top: 1px; }
   .type.film { background: var(--t-film); } .type.edit { background: var(--t-edit); } .type.post { background: var(--t-post); }
   .type.guide { background: var(--t-guide); } .type.plan { background: var(--t-plan); } .type.review { background: var(--t-review); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 6px; border-top: 1px solid var(--line); vertical-align: middle; }
+  th { color: var(--sub); font-size: 12px; font-weight: 700; border-top: none; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .kw { background: var(--lime); color: #111; font-weight: 800; padding: 0 7px; border-radius: 6px; font-size: 13px; white-space: nowrap; }
+  .cat { font-size: 12px; font-weight: 800; padding: 1px 9px; border-radius: 99px; color: #111; white-space: nowrap; }
+  .btn { border: 1px solid var(--line); background: var(--card); font-weight: 700; font-size: 14px; padding: 8px 14px; border-radius: 12px; cursor: pointer; }
+  .btn.pri { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .btn.lime { background: var(--lime); color: #111; border-color: #111; }
+  .btn.danger { color: var(--red); }
+  .btn.sm { font-size: 13px; padding: 5px 10px; border-radius: 10px; }
+
+  /* 기획판 */
+  .board { display: grid; gap: 14px; }
+  @media (min-width: 860px) { .board { grid-template-columns: 1.35fr 1fr; align-items: start; } }
+  .col { background: var(--soft); border: 1px solid var(--line); border-radius: 18px; padding: 12px; }
+  .colh { display: flex; align-items: center; gap: 8px; margin: 2px 4px 10px; }
+  .colh h2 { font-size: 16px; font-weight: 800; }
+  .colh .btn { margin-left: auto; }
+  .list { display: grid; gap: 8px; min-height: 80px; }
+  .item { display: flex; gap: 10px; align-items: stretch; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 10px 10px 6px; cursor: pointer; }
+  .item:hover { border-color: var(--ink); }
+  .handle { flex: none; width: 22px; display: grid; place-items: center; color: var(--sub); cursor: grab; font-size: 18px; touch-action: none; user-select: none; }
+  .slot { flex: none; width: 46px; text-align: center; border-right: 1px solid var(--line); padding-right: 8px; }
+  .slot b { display: block; font-size: 20px; font-weight: 900; line-height: 1.1; }
+  .slot span { font-size: 11px; color: var(--sub); font-weight: 700; }
+  .item .body { flex: 1; min-width: 0; }
+  .item .tt { font-weight: 800; font-size: 15px; line-height: 1.35; }
+  .item .hk { color: var(--sub); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item .chips { display: flex; gap: 6px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
+  .dots { display: inline-flex; gap: 3px; margin-left: auto; }
+  .dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+  .dots i.on { background: #9BC400; }
+  .cut { margin: 4px 2px; padding: 6px 10px; font-size: 12px; font-weight: 800; color: var(--sub); border-top: 2px dashed var(--line); }
+  .sortable-ghost { opacity: .35; }
+  .sortable-chosen .item, .item.sortable-chosen { border-color: var(--ink); box-shadow: 0 6px 16px rgba(0,0,0,.15); }
+  #backlogList .slot { display: none; }
+  .empty { color: var(--sub); font-size: 13px; text-align: center; padding: 18px; border: 1px dashed var(--line); border-radius: 12px; }
+
+  /* 일정 */
   .days { display: grid; gap: 10px; }
   @media (min-width: 760px) { .days { grid-template-columns: repeat(2, 1fr); } }
-  .dayc { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; }
+  .dayc { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; }
   .dayc.today { border: 2px solid var(--ink); box-shadow: 0 4px 0 var(--ink); }
-  .dayc.past { opacity: .62; }
-  .dayc .dh { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
-  .dayc .dd { font-size: 18px; font-weight: 900; }
-  .dayc .dw { color: var(--sub); font-size: 13px; font-weight: 700; }
+  .dayc.past { opacity: .6; }
+  .dh { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .dd { font-size: 18px; font-weight: 900; }
+  .dw { color: var(--sub); font-size: 13px; font-weight: 700; }
   .tag { margin-left: auto; font-size: 12px; font-weight: 800; padding: 2px 10px; border-radius: 99px; background: var(--lime); color: #111; }
   .tag.film { background: var(--t-film); }
-  .clist { display: grid; gap: 10px; }
-  .ci { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; }
-  .ci .top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .no { width: 30px; height: 30px; border-radius: 50%; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-weight: 900; font-size: 14px; flex: none; }
-  .cat { font-size: 12px; font-weight: 800; padding: 2px 10px; border-radius: 99px; color: #111; }
-  .ci .tt { font-size: 17px; font-weight: 800; margin: 8px 0 2px; letter-spacing: -0.01em; }
-  .ci .hook { color: var(--sub); font-size: 14px; }
-  .ci .row { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--sub); margin-top: 8px; }
-  .ci .row b { color: var(--ink); }
-  .kw { background: var(--lime); color: #111; font-weight: 800; padding: 0 8px; border-radius: 6px; }
-  .stages { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
-  .stg { font: inherit; font-size: 13px; font-weight: 700; padding: 5px 11px; border-radius: 99px; border: 1px solid var(--line); background: var(--soft); color: var(--sub); cursor: pointer; }
-  .stg.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-  .stg.on::before { content: "✓ "; color: var(--lime); }
-  .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-  .filters button { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
-  .filters button.on { background: var(--ink); color: var(--bg); }
+  .legend { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+
+  /* 분석 */
+  .hbar { display: grid; grid-template-columns: 120px 1fr 54px; gap: 8px; align-items: center; font-size: 13px; padding: 4px 0; }
+  .hbar .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hbar .tr { height: 14px; background: var(--soft); border-radius: 6px; overflow: hidden; display: flex; }
+  .hbar .tr i { display: block; height: 100%; }
+  .delta { font-size: 11px; color: #3C9A00; font-weight: 800; }
+
+  /* 시트 */
   .sheet { display: grid; gap: 12px; }
   @media (min-width: 760px) { .sheet { grid-template-columns: 1fr 1fr; } }
-  .sheet ul { list-style: none; display: grid; gap: 8px; }
-  .sheet li { padding-left: 18px; position: relative; font-size: 14.5px; }
+  .sheet ul { list-style: none; display: grid; gap: 7px; }
+  .sheet li { padding-left: 17px; position: relative; font-size: 14.5px; }
   .sheet li::before { content: ""; position: absolute; left: 2px; top: 9px; width: 7px; height: 7px; border-radius: 2px; background: var(--lime); border: 1.5px solid var(--ink); }
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { text-align: left; padding: 8px 6px; border-top: 1px solid var(--line); vertical-align: top; }
-  th { color: var(--sub); font-size: 12px; font-weight: 700; border-top: none; }
-  .note { color: var(--sub); font-size: 12.5px; margin-top: 14px; }
-  .note button { font: inherit; font-size: 12.5px; background: none; border: none; color: var(--ink); text-decoration: underline; cursor: pointer; padding: 0; }
-  .hidden { display: none !important; }
-  .legend { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .sheet .card h2 .btn { margin-left: auto; }
+
+  /* 편집 창 */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; justify-content: flex-end; z-index: 50; }
+  .panel { width: min(560px, 100%); height: 100%; background: var(--bg); overflow-y: auto; padding: 18px 16px 40px; box-shadow: -10px 0 30px rgba(0,0,0,.25); }
+  .panel .ph { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; position: sticky; top: -18px; background: var(--bg); padding: 10px 0; z-index: 2; }
+  .panel .ph h2 { font-size: 18px; font-weight: 800; flex: 1; }
+  .field { display: grid; gap: 5px; margin-bottom: 12px; }
+  .field > span { font-size: 13px; font-weight: 700; color: var(--sub); }
+  .field input, .field select, .field textarea { width: 100%; border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 10px 12px; font-size: 15px; }
+  .field textarea { resize: vertical; min-height: 90px; line-height: 1.55; }
+  .field textarea.script { min-height: 220px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stages { display: flex; gap: 6px; flex-wrap: wrap; }
+  .stg { font-size: 13px; font-weight: 700; padding: 6px 11px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); color: var(--sub); cursor: pointer; }
+  .stg.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .stg.on::before { content: "✓ "; color: var(--lime); }
+  .mtab input { width: 100%; border: 1px solid var(--line); background: var(--card); border-radius: 8px; padding: 6px; font-size: 13px; text-align: right; }
+  .mtab input[type=date] { text-align: left; }
+  .mtab td { padding: 4px 3px; }
+  .note { color: var(--sub); font-size: 12.5px; margin-top: 12px; }
+  .steps { padding-left: 20px; display: grid; gap: 6px; font-size: 14.5px; }
+  .steps b { background: var(--lime); color: #111; padding: 0 5px; border-radius: 5px; }
+  .toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: #111; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 14px; font-weight: 700; z-index: 99; box-shadow: 0 8px 20px rgba(0,0,0,.3); }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <div>
-      <div class="meta" id="cycleMeta"></div>
+      <div class="meta" id="cycleMeta">불러오는 중…</div>
       <h1>콘텐츠 <em>운영</em> 대시보드</h1>
     </div>
-    <div class="meta" id="updated"></div>
+    <span class="pill" id="saveState">…</span>
   </header>
 
   <nav id="tabs">
     <button data-tab="today" class="on">오늘</button>
-    <button data-tab="schedule">10일 일정</button>
-    <button data-tab="contents">콘텐츠 10편</button>
+    <button data-tab="board">기획판</button>
+    <button data-tab="schedule">일정</button>
+    <button data-tab="stats">분석</button>
     <button data-tab="sheet">운영 시트</button>
+    <button data-tab="settings">설정</button>
   </nav>
 
   <section id="today"></section>
+  <section id="board" class="hidden"></section>
   <section id="schedule" class="hidden"></section>
-  <section id="contents" class="hidden"></section>
+  <section id="stats" class="hidden"></section>
   <section id="sheet" class="hidden"></section>
-
-  <p class="note">체크 표시는 이 기기(브라우저)에만 저장돼요. 다른 기기와 맞추려면 Claude에게 "3편 게시 완료로 바꿔 줘"처럼 말하면 원본에 반영돼요. · <button id="resetLocal">이 기기 체크 지우기</button></p>
+  <section id="settings" class="hidden"></section>
 </div>
+<div id="modalRoot"></div>
 
 <script>
+/* ───────── 기본값 ───────── */
+const OWNER = "ghdtjr1101", REPO = "content-dashboard-data", PATH = "data.json";
+const TK = "cd-token", LK = "cd-local-data", TABK = "cd-tab";
 const TYPE = { film: "촬영", edit: "편집", post: "게시", guide: "가이드", plan: "준비", review: "점검" };
 const STAGES = [["script","대본"],["film","촬영"],["edit","편집"],["cover","표지"],["caption","캡션"],["post","게시"],["guide","가이드"]];
 const WEEK = ["일","월","화","수","목","금","토"];
-const KEY = "content-dashboard-v1";
-let D, local = {};
+const DEFAULT = { version: 2, updated: "", settings: { filmDate: "", start: "", cycleLen: 7, postingTime: "19:00", cycleName: "1차 사이클" },
+  categories: [{ id: "edit", name: "AI 편집", color: "#D8FF3E" }, { id: "video", name: "AI 영상", color: "#8FD3FF" }, { id: "auto", name: "자동화", color: "#FFB86B" }, { id: "tip", name: "꿀팁", color: "#E6B3FF" }],
+  queue: [], backlog: [], archive: [], contents: {}, sheet: [] };
 
-function load() { try { local = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { local = {}; } }
-function save() { try { localStorage.setItem(KEY, JSON.stringify(local)); } catch (e) {} }
-const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+let D = null, sha = null, mode = "local", saveTimer = null, saving = false, pending = false;
+
+/* ───────── 도구 ───────── */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const parse = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
-const md = s => { const d = parse(s); return `${d.getMonth()+1}.${d.getDate()}`; };
-const wd = s => WEEK[parse(s).getDay()];
-const today = ymd(new Date());
-const daysBetween = (a, b) => Math.round((parse(b) - parse(a)) / 86400000);
+const addDays = (s, n) => { const d = parse(s); d.setDate(d.getDate() + n); return ymd(d); };
+const md = s => s ? `${parse(s).getMonth()+1}.${parse(s).getDate()}` : "";
+const wd = s => s ? WEEK[parse(s).getDay()] : "";
+const TODAY = ymd(new Date());
+const diff = (a, b) => Math.round((parse(b) - parse(a)) / 86400000);
+const fmt = n => n == null || n === "" ? "-" : Number(n).toLocaleString("ko-KR");
+const ls = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
+function toast(msg) { const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2600); }
+const b64e = str => { const bytes = new TextEncoder().encode(str); let bin = ""; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); };
+const b64d = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\n/g, "")), c => c.charCodeAt(0)));
+const newId = () => "x" + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
+const catOf = id => (D.categories.find(c => c.id === id) || { name: "기타", color: "#ddd" });
 
-function stageOn(no, st) { const k = `s:${no}:${st}`; return k in local ? local[k] : !!(D.status[no] && D.status[no][st]); }
-function taskOn(date, i) { const k = `t:${date}:${i}`; if (k in local) return local[k];
-  const t = D.schedule.find(x => x.date === date).tasks[i];
-  if (t.type === "post" && t.nos) return t.nos.every(n => stageOn(n, "post"));
-  if (t.type === "edit" && t.nos) return t.nos.every(n => stageOn(n, "edit"));
-  if (t.type === "film" && t.nos) return t.nos.every(n => stageOn(n, "film"));
-  if (t.type === "guide" && t.nos) return t.nos.every(n => stageOn(n, "guide"));
-  return false; }
-const catOf = id => D.categories.find(c => c.id === id) || { name: id, color: "#ddd" };
-
-function taskHtml(day, t, i) {
-  const on = taskOn(day.date, i);
-  return `<label class="task ${on ? "done" : ""}"><input type="checkbox" data-t="${day.date}:${i}" ${on ? "checked" : ""}>
-    <span class="type ${t.type}">${TYPE[t.type]}</span><span class="t">${esc(t.text)}</span></label>`;
+/* ───────── 저장소 ───────── */
+async function gh(method, body) {
+  const r = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`, {
+    method, headers: { Authorization: `Bearer ${ls.get(TK)}`, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" },
+    body: body ? JSON.stringify(body) : undefined, cache: "no-store" });
+  if (!r.ok) { const e = new Error("GitHub " + r.status); e.status = r.status; throw e; }
+  return r.json();
+}
+async function loadData() {
+  if (ls.get(TK)) {
+    try { const j = await gh("GET"); D = JSON.parse(b64d(j.content)); sha = j.sha; mode = "github"; setState("ok", "깃허브 연결됨"); return; }
+    catch (e) { setState("err", e.status === 401 ? "열쇠가 틀렸거나 만료됐어요" : "깃허브 연결 실패"); }
+  }
+  mode = "local";
+  const saved = ls.get(LK);
+  D = saved ? JSON.parse(saved) : structuredClone(DEFAULT);
+  if (!ls.get(TK)) setState("warn", "이 기기에만 저장 중");
+}
+function setState(kind, text) { const p = $("#saveState"); p.className = "pill " + (kind || ""); p.textContent = text; }
+function changed() {
+  D.updated = TODAY;
+  ls.set(LK, JSON.stringify(D));
+  if (mode !== "github") { setState("warn", "이 기기에만 저장됨"); return; }
+  setState("", "저장 대기…");
+  clearTimeout(saveTimer); saveTimer = setTimeout(pushData, 1200);
+}
+async function pushData() {
+  if (saving) { pending = true; return; }
+  saving = true; setState("", "저장 중…");
+  try {
+    const j = await gh("PUT", { message: `대시보드 수정 ${new Date().toLocaleString("ko-KR")}`, content: b64e(JSON.stringify(D, null, 1)), sha });
+    sha = j.content.sha; setState("ok", "저장됨 " + new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }));
+  } catch (e) {
+    if (e.status === 409 || e.status === 422) {
+      const j = await gh("GET"); D = JSON.parse(b64d(j.content)); sha = j.sha; renderAll();
+      toast("다른 기기에서 바뀐 내용이 있어 새로 불러왔어요. 방금 고친 건 다시 해 주세요."); setState("ok", "새로 불러옴");
+    } else setState("err", "저장 실패 · 다시 시도");
+  } finally { saving = false; if (pending) { pending = false; pushData(); } }
 }
 
+/* ───────── 일정 계산 ───────── */
+function plan() {
+  const s = D.settings, out = {}, len = +s.cycleLen || 7;
+  if (!s.start) return out;
+  D.queue.forEach((id, i) => {
+    if (i >= len) { out[id] = { slot: i + 1, next: true }; return; }
+    const edit = i <= 2 ? s.start : addDays(s.start, 2 * Math.floor((i - 1) / 2));
+    out[id] = { slot: i + 1, post: addDays(s.start, i), edit, film: s.filmDate || addDays(s.start, -1) };
+  });
+  return out;
+}
+function days() {
+  const s = D.settings, P = plan(), len = Math.min(+s.cycleLen || 7, D.queue.length), map = {};
+  if (!s.start || !len) return [];
+  const ids = D.queue.slice(0, len);
+  const add = (date, t) => (map[date] = map[date] || []).push(t);
+  const film = s.filmDate || addDays(s.start, -1);
+  add(film, { type: "plan", text: `${len}편 대본 최종 확인 (훅·키워드)`, ids, stage: "script" });
+  add(film, { type: "film", text: `${len}편 몰아서 촬영 · 옷 2~3벌 번갈아`, ids, stage: "film" });
+  const edits = {};
+  ids.forEach(id => (edits[P[id].edit] = edits[P[id].edit] || []).push(id));
+  Object.entries(edits).forEach(([d, g]) => {
+    add(d, { type: "edit", text: `${g.map(id => P[id].slot).join("·")}편 편집 + 표지 + 캡션`, ids: g, stage: "edit" });
+    add(addDays(d, 1), { type: "guide", text: `${g.map(id => P[id].slot).join("·")}편 노션 가이드`, ids: g, stage: "guide" });
+  });
+  ids.forEach(id => add(P[id].post, { type: "post", text: `${P[id].slot}편 게시 · ${D.contents[id].title}`, ids: [id], stage: "post" }));
+  const last = P[ids[ids.length - 1]].post;
+  for (let k = 4; k < len; k += 5) add(addDays(s.start, k), { type: "review", text: "조회·좋아요·댓글·공유 숫자 기록" });
+  add(last, { type: "review", text: "사이클 돌아보기 → 다음 사이클 주제 고르기" });
+  return Object.keys(map).sort().map(date => ({ date, tasks: map[date].sort((a, b) => ["plan","film","edit","post","guide","review"].indexOf(a.type) - ["plan","film","edit","post","guide","review"].indexOf(b.type)), tag: date === film ? "촬영일" : (edits[date] ? "편집" : "") }));
+}
+const taskDone = t => t.ids && t.stage ? t.ids.every(id => D.contents[id]?.stages?.[t.stage]) : !!(D.checks && D.checks[t.text]);
+
+/* ───────── 화면: 오늘 ───────── */
+function taskHtml(t, key) {
+  const on = taskDone(t);
+  return `<label class="task ${on ? "done" : ""}"><input type="checkbox" data-task="${esc(key)}" ${on ? "checked" : ""}><span class="type ${t.type}">${TYPE[t.type]}</span><span class="t">${esc(t.text)}</span></label>`;
+}
+let DAYS = [];
 function renderToday() {
-  const c = D.cycle, el = document.getElementById("today");
-  const stats = STAGES.filter(([s]) => ["film","edit","post","guide"].includes(s)).map(([s, n]) => {
-    const done = D.contents.filter(x => stageOn(x.no, s)).length;
-    return `<div class="card stat"><div class="label">${n}</div><div class="big">${done}<span style="font-size:18px;color:var(--sub)"> / ${D.contents.length}</span></div><div class="bar"><i style="width:${done / D.contents.length * 100}%"></i></div></div>`;
-  }).join("");
-  let day = D.schedule.find(x => x.date === today), headSub, headDay;
-  if (day) { headSub = "오늘 할 일"; headDay = `${md(day.date)} (${wd(day.date)}) ${day.tag ? "· " + esc(day.tag) : ""}`; }
-  else if (today < D.schedule[0].date) { day = D.schedule[0]; const n = daysBetween(today, day.date);
-    headSub = `${day.tag || "시작"}까지 D-${n}`; headDay = `${md(day.date)} (${wd(day.date)}) 미리 보기`; }
-  else { day = null; headSub = "사이클 끝"; headDay = "다음 10편을 준비할 때예요"; }
-  const next = D.contents.filter(x => x.post >= today).sort((a, b) => a.post.localeCompare(b.post)).slice(0, 3);
-  el.innerHTML = `
+  DAYS = days();
+  const ids = D.queue.slice(0, +D.settings.cycleLen || 7);
+  const stat = ["film","edit","post","guide"].map(s => { const n = ids.filter(id => D.contents[id]?.stages?.[s]).length;
+    return `<div class="card"><div class="label">${STAGES.find(x => x[0] === s)[1]}</div><div class="big">${n}<span style="font-size:17px;color:var(--sub)"> / ${ids.length}</span></div><div class="bar"><i style="width:${ids.length ? n / ids.length * 100 : 0}%"></i></div></div>`; }).join("");
+  let day = DAYS.find(d => d.date === TODAY), sub, head;
+  if (day) { sub = "오늘 할 일"; head = `${md(day.date)} (${wd(day.date)})${day.tag ? " · " + day.tag : ""}`; }
+  else if (DAYS.length && TODAY < DAYS[0].date) { day = DAYS[0]; sub = `${day.tag || "시작"}까지 D-${diff(TODAY, day.date)}`; head = `${md(day.date)} (${wd(day.date)}) 미리 보기`; }
+  else if (DAYS.length) { sub = "오늘은 할 일이 없어요"; head = "기획판에서 다음 순서를 손질해 보세요"; day = DAYS.find(d => d.date > TODAY); if (day) { sub = "다음 할 일"; head = `${md(day.date)} (${wd(day.date)})`; } }
+  else { sub = "시작 전"; head = "설정에서 촬영일·첫 게시일을 정해 주세요"; }
+  const P = plan();
+  const next = D.queue.filter(id => P[id]?.post && P[id].post >= TODAY && !D.contents[id].stages.post).slice(0, 3);
+  $("#today").innerHTML = `
     <div class="grid g2">
-      <div class="card hero"><div class="sub">${headSub}</div><div class="day">${headDay}</div>
-        ${day ? day.tasks.map((t, i) => taskHtml(day, t, i)).join("") : ""}</div>
-      <div class="card"><h2>다음 게시 ${esc(D.postingTime)}</h2>
-        <table><tr><th>날짜</th><th>편</th><th>키워드</th></tr>
-        ${next.map(x => `<tr><td>${md(x.post)} (${wd(x.post)})</td><td><b>${x.no}.</b> ${esc(x.title)}</td><td><span class="kw">${esc(x.keyword)}</span></td></tr>`).join("") || `<tr><td colspan="3">남은 게시가 없어요</td></tr>`}
-        </table></div>
+      <div class="card hero"><div class="sub">${sub}</div><div class="day">${esc(head)}</div>
+        ${day ? day.tasks.map((t, i) => taskHtml(t, day.date + "|" + i)).join("") : ""}</div>
+      <div class="card"><h2>다음 게시 · ${esc(D.settings.postingTime)}</h2>
+        <table><tr><th>날짜</th><th>콘텐츠</th><th>키워드</th></tr>
+        ${next.map(id => { const c = D.contents[id]; return `<tr data-open="${id}" style="cursor:pointer"><td>${md(P[id].post)} (${wd(P[id].post)})</td><td><b>${P[id].slot}.</b> ${esc(c.title)}</td><td><span class="kw">${esc(c.keyword)}</span></td></tr>`; }).join("") || `<tr><td colspan="3" class="meta">남은 게시가 없어요</td></tr>`}</table></div>
     </div>
-    <div class="grid g4" style="margin-top:14px">${stats}</div>`;
+    <div class="grid g4" style="margin-top:14px">${stat}</div>`;
 }
 
+/* ───────── 화면: 기획판 ───────── */
+function itemHtml(id, slotInfo) {
+  const c = D.contents[id]; if (!c) return "";
+  const cat = catOf(c.cat);
+  const dots = STAGES.map(([s]) => `<i class="${c.stages?.[s] ? "on" : ""}"></i>`).join("");
+  const slot = slotInfo ? `<div class="slot"><b>${slotInfo.slot}</b><span>${slotInfo.post ? md(slotInfo.post) + " " + wd(slotInfo.post) : "다음"}</span></div>` : `<div class="slot"></div>`;
+  return `<div class="item" data-id="${id}"><div class="handle" title="끌어서 옮기기">⋮⋮</div>${slot}
+    <div class="body"><div class="tt">${esc(c.title || "(제목 없음)")}</div><div class="hk">${esc(c.hook || "")}</div>
+    <div class="chips"><span class="cat" style="background:${cat.color}">${esc(cat.name)}</span>${c.keyword ? `<span class="kw">${esc(c.keyword)}</span>` : ""}${c.link ? "🔗" : ""}<span class="dots" title="대본·촬영·편집·표지·캡션·게시·가이드">${dots}</span></div></div></div>`;
+}
+let sorts = [];
+function renderBoard() {
+  const P = plan(), len = +D.settings.cycleLen || 7;
+  const q = D.queue.map((id, i) => (i === len ? `<div class="cut" data-cut>↓ 여기부터 다음 사이클</div>` : "") + itemHtml(id, P[id])).join("");
+  $("#board").innerHTML = `
+    <div class="board">
+      <div class="col"><div class="colh"><h2>게시 순서</h2><span class="meta">${D.settings.cycleName || ""} · ${len}편</span></div>
+        <div class="list" id="queueList">${q || `<div class="empty">오른쪽 예비 콘텐츠를 끌어다 놓으세요</div>`}</div></div>
+      <div class="col"><div class="colh"><h2>예비 콘텐츠</h2><span class="meta">${D.backlog.length}개</span><button class="btn sm lime" data-act="new">+ 새 아이디어</button></div>
+        <div class="list" id="backlogList">${D.backlog.map(id => itemHtml(id)).join("") || `<div class="empty">아이디어를 추가해 보세요</div>`}</div></div>
+    </div>
+    <p class="note">⋮⋮ 손잡이를 끌어서 순서를 바꾸거나, 예비 ↔ 게시 순서 사이를 옮겨요. 카드를 누르면 대본·링크·숫자를 고칠 수 있어요. 날짜는 순서대로 자동 계산돼요.</p>`;
+  sorts.forEach(s => s.destroy()); sorts = [];
+  if (!window.Sortable) return;
+  const opts = { group: "content", handle: ".handle", animation: 160, filter: ".cut,.empty", delay: 0, onEnd: syncLists };
+  sorts.push(new Sortable($("#queueList"), opts), new Sortable($("#backlogList"), opts));
+}
+function syncLists() {
+  const ids = el => [...el.querySelectorAll(".item")].map(x => x.dataset.id);
+  D.queue = ids($("#queueList")); D.backlog = ids($("#backlogList"));
+  changed(); renderAll();
+}
+
+/* ───────── 화면: 일정 ───────── */
 function renderSchedule() {
-  const el = document.getElementById("schedule");
-  el.innerHTML = `<div class="legend">${Object.entries(TYPE).map(([k, v]) => `<span class="type ${k}">${v}</span>`).join("")}</div>
-  <div class="days">${D.schedule.map(day => {
-    const cls = day.date === today ? "today" : (day.date < today ? "past" : "");
-    return `<div class="dayc ${cls}"><div class="dh"><span class="dd">${md(day.date)}</span><span class="dw">${wd(day.date)}요일${day.date === today ? " · 오늘" : ""}</span>
-      ${day.tag ? `<span class="tag ${day.tag === "촬영일" ? "film" : ""}">${esc(day.tag)}</span>` : ""}</div>
-      ${day.tasks.map((t, i) => taskHtml(day, t, i)).join("")}</div>`; }).join("")}</div>`;
+  const list = days();
+  $("#schedule").innerHTML = `<div class="legend">${Object.entries(TYPE).map(([k, v]) => `<span class="type ${k}">${v}</span>`).join("")}</div>
+    ${list.length ? `<div class="days">${list.map(d => { const cls = d.date === TODAY ? "today" : (d.date < TODAY ? "past" : "");
+      return `<div class="dayc ${cls}"><div class="dh"><span class="dd">${md(d.date)}</span><span class="dw">${wd(d.date)}요일${d.date === TODAY ? " · 오늘" : ""}</span>${d.tag ? `<span class="tag ${d.tag === "촬영일" ? "film" : ""}">${d.tag}</span>` : ""}</div>
+      ${d.tasks.map((t, i) => taskHtml(t, d.date + "|" + i)).join("")}</div>`; }).join("")}</div>` : `<div class="empty">설정에서 촬영일과 첫 게시일을 정하면 일정이 자동으로 생겨요</div>`}
+    <p class="note">일정은 기획판 순서·설정(첫 게시일, 사이클 길이)으로 자동 계산돼요. 편집은 게시 0~2일 전에 2~3편씩 묶이도록 잡혀요.</p>`;
 }
 
-let filter = "all";
-function renderContents() {
-  const el = document.getElementById("contents");
-  const list = D.contents.filter(x => filter === "all" || x.cat === filter);
-  el.innerHTML = `<div class="filters"><button data-f="all" class="${filter === "all" ? "on" : ""}">전체 ${D.contents.length}</button>
-    ${D.categories.map(c => `<button data-f="${c.id}" class="${filter === c.id ? "on" : ""}">${esc(c.name)} ${D.contents.filter(x => x.cat === c.id).length}</button>`).join("")}</div>
-  <div class="clist">${list.map(x => { const c = catOf(x.cat);
-    return `<div class="ci"><div class="top"><span class="no">${x.no}</span><span class="cat" style="background:${c.color}">${esc(c.name)}</span>
-      <span class="meta" style="margin-left:auto">게시 ${md(x.post)} (${wd(x.post)})</span></div>
-      <div class="tt">${esc(x.title)}</div><div class="hook">훅 · “${esc(x.hook)}”</div>
-      <div class="row"><span>키워드 <span class="kw">${esc(x.keyword)}</span></span><span>가이드 <b>${esc(x.guide)}</b></span><span>편집 ${md(x.edit)}</span></div>
-      <div class="stages">${STAGES.map(([s, n]) => `<button class="stg ${stageOn(x.no, s) ? "on" : ""}" data-s="${x.no}:${s}">${n}</button>`).join("")}</div></div>`; }).join("")}</div>`;
+/* ───────── 화면: 분석 ───────── */
+const latest = c => (c.metrics || []).slice().sort((a, b) => (a.date || "").localeCompare(b.date || "")).at(-1);
+const prev = c => (c.metrics || []).slice().sort((a, b) => (a.date || "").localeCompare(b.date || "")).at(-2);
+function renderStats() {
+  const all = [...D.archive, ...D.queue, ...D.backlog].filter(id => D.contents[id]);
+  const rows = all.map(id => ({ id, c: D.contents[id], m: latest(D.contents[id]), p: prev(D.contents[id]) })).filter(r => r.m);
+  const sum = k => rows.reduce((a, r) => a + (+r.m[k] || 0), 0);
+  const tot = { views: sum("views"), likes: sum("likes"), comments: sum("comments"), shares: sum("shares"), saves: sum("saves") };
+  const er = r => r.m.views ? ((+r.m.likes || 0) + (+r.m.comments || 0) + (+r.m.shares || 0) + (+r.m.saves || 0)) / r.m.views * 100 : null;
+  const max = Math.max(1, ...rows.map(r => (+r.m.likes || 0) + (+r.m.comments || 0) + (+r.m.shares || 0)));
+  const byCat = D.categories.map(cat => { const rs = rows.filter(r => r.c.cat === cat.id); return { cat, n: rs.length, avg: rs.length ? Math.round(rs.reduce((a, r) => a + (+r.m.views || 0), 0) / rs.length) : 0 }; });
+  const top = (k) => rows.slice().sort((a, b) => (+b.m[k] || 0) - (+a.m[k] || 0)).slice(0, 3);
+  const card = (label, v) => `<div class="card"><div class="label">${label}</div><div class="big">${fmt(v)}</div></div>`;
+  $("#stats").innerHTML = rows.length ? `
+    <div class="grid g4">${card("총 조회", tot.views)}${card("총 좋아요", tot.likes)}${card("총 댓글", tot.comments)}${card("총 공유", tot.shares)}</div>
+    <div class="grid g2" style="margin-top:14px">
+      <div class="card"><h2>편별 반응 <span class="meta" style="font-weight:600">좋아요 · 댓글 · 공유</span></h2>
+        ${rows.map(r => { const l = +r.m.likes || 0, c = +r.m.comments || 0, s = +r.m.shares || 0;
+          return `<div class="hbar" data-open="${r.id}" style="cursor:pointer"><span class="nm">${esc(r.c.title)}</span><span class="tr"><i style="width:${l / max * 100}%;background:#D8FF3E"></i><i style="width:${c / max * 100}%;background:#4FC3F7"></i><i style="width:${s / max * 100}%;background:#CE93D8"></i></span><span class="num meta" style="text-align:right">${fmt(l + c + s)}</span></div>`; }).join("")}
+        <p class="note"><span class="cat" style="background:#D8FF3E">좋아요</span> <span class="cat" style="background:#4FC3F7">댓글</span> <span class="cat" style="background:#CE93D8">공유</span></p></div>
+      <div class="card"><h2>잘 된 콘텐츠</h2>
+        ${[["comments","댓글 많은 순 (키워드·DM 반응)"],["shares","공유 많은 순 (퍼지는 주제)"],["saves","저장 많은 순 (다시 볼 만한 정보)"]].map(([k, t]) => `<div class="label" style="margin-top:6px">${t}</div><table>${top(k).map((r, i) => `<tr data-open="${r.id}" style="cursor:pointer"><td>${i + 1}. ${esc(r.c.title)}</td><td class="num">${fmt(r.m[k])}</td></tr>`).join("")}</table>`).join("")}</div>
+    </div>
+    <div class="card" style="margin-top:14px"><h2>전체 표</h2><div style="overflow-x:auto"><table>
+      <tr><th>콘텐츠</th><th>분류</th><th class="num">조회</th><th class="num">좋아요</th><th class="num">댓글</th><th class="num">공유</th><th class="num">저장</th><th class="num">반응률</th><th>기준일</th></tr>
+      ${rows.map(r => { const e = er(r), cat = catOf(r.c.cat), dl = k => r.p && +r.m[k] > +r.p[k] ? ` <span class="delta">+${fmt(+r.m[k] - +r.p[k])}</span>` : "";
+        return `<tr data-open="${r.id}" style="cursor:pointer"><td>${esc(r.c.title)} ${r.c.link ? `<a href="${esc(r.c.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🔗</a>` : ""}</td><td><span class="cat" style="background:${cat.color}">${esc(cat.name)}</span></td>
+        <td class="num">${fmt(r.m.views)}${dl("views")}</td><td class="num">${fmt(r.m.likes)}${dl("likes")}</td><td class="num">${fmt(r.m.comments)}${dl("comments")}</td><td class="num">${fmt(r.m.shares)}${dl("shares")}</td><td class="num">${fmt(r.m.saves)}</td><td class="num">${e == null ? "-" : e.toFixed(1) + "%"}</td><td class="meta">${md(r.m.date)}</td></tr>`; }).join("")}
+    </table></div></div>
+    <div class="card" style="margin-top:14px"><h2>분류별 평균 조회</h2>${byCat.map(b => `<div class="hbar"><span class="nm">${esc(b.cat.name)} (${b.n})</span><span class="tr"><i style="width:${b.avg / Math.max(1, ...byCat.map(x => x.avg)) * 100}%;background:${b.cat.color}"></i></span><span class="meta" style="text-align:right">${fmt(b.avg)}</span></div>`).join("")}</div>`
+  : `<div class="card"><h2>아직 숫자가 없어요</h2><p class="meta">게시한 콘텐츠 카드를 열어 영상 링크와 조회·좋아요·댓글·공유 수를 넣으면 여기서 분석해요. Claude에게 "숫자 업데이트해 줘"라고 해도 돼요.</p></div>`;
 }
 
+/* ───────── 화면: 운영 시트 ───────── */
 function renderSheet() {
-  document.getElementById("sheet").innerHTML = `<div class="sheet">${D.sheet.map(s => `<div class="card"><h2>${esc(s.title)}</h2><ul>${s.items.map(i => `<li>${esc(i)}</li>`).join("")}</ul></div>`).join("")}
-  <div class="card" style="grid-column:1/-1"><h2>10편 키워드 표</h2><table><tr><th>편</th><th>제목</th><th>키워드</th><th>가이드</th></tr>
-  ${D.contents.map(x => `<tr><td><b>${x.no}</b></td><td>${esc(x.title)}</td><td><span class="kw">${esc(x.keyword)}</span></td><td>${esc(x.guide)}</td></tr>`).join("")}</table></div></div>`;
+  $("#sheet").innerHTML = `<div class="sheet">${(D.sheet || []).map((s, i) => `<div class="card"><h2>${esc(s.title)}<button class="btn sm" data-sheet="${i}">고치기</button></h2><ul>${s.items.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>`).join("")}
+    <div class="card" style="display:grid;place-items:center"><button class="btn" data-sheet="new">+ 항목 추가</button></div></div>`;
+}
+function editSheet(i) {
+  const s = i === "new" ? { title: "", items: [] } : D.sheet[i];
+  openModal(`<div class="ph"><h2>운영 시트 ${i === "new" ? "추가" : "고치기"}</h2><button class="btn" data-close>닫기</button></div>
+    <label class="field"><span>제목</span><input id="shT" value="${esc(s.title)}"></label>
+    <label class="field"><span>내용 (한 줄에 하나씩)</span><textarea id="shI" style="min-height:240px">${esc(s.items.join("\n"))}</textarea></label>
+    <div style="display:flex;gap:8px"><button class="btn pri" id="shSave">저장</button>${i !== "new" ? `<button class="btn danger" id="shDel">삭제</button>` : ""}</div>`);
+  $("#shSave").onclick = () => { const v = { title: $("#shT").value.trim() || "제목 없음", items: $("#shI").value.split("\n").map(x => x.trim()).filter(Boolean) };
+    if (i === "new") D.sheet.push(v); else D.sheet[i] = v; changed(); closeModal(); renderAll(); };
+  if ($("#shDel")) $("#shDel").onclick = () => { if (confirm("이 항목을 삭제할까요?")) { D.sheet.splice(i, 1); changed(); closeModal(); renderAll(); } };
 }
 
-function renderAll() { renderToday(); renderSchedule(); renderContents(); renderSheet(); }
+/* ───────── 화면: 설정 ───────── */
+function renderSettings() {
+  const s = D.settings, has = !!ls.get(TK);
+  $("#settings").innerHTML = `
+    <div class="grid g2">
+      <div class="card"><h2>깃허브 연결 ${has && mode === "github" ? `<span class="pill ok">연결됨</span>` : `<span class="pill warn">연결 안 됨</span>`}</h2>
+        <p class="meta" style="margin-bottom:10px">내용은 비공개 저장소 <b>${OWNER}/${REPO}</b>에 저장돼요. 기기마다 한 번 열쇠(토큰)를 넣으면 폰·컴퓨터가 같은 내용을 봐요.</p>
+        ${has ? `<button class="btn" id="tokOut">이 기기 연결 끊기</button>` : `
+        <ol class="steps"><li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">열쇠 만들기 페이지</a>를 ghdtjr1101 계정으로 열어요</li>
+          <li>Token name <b>대시보드</b> · Expiration <b>1년</b></li><li>Repository access → <b>Only select repositories</b> → <b>${REPO}</b></li>
+          <li>Permissions → Repository → <b>Contents: Read and write</b></li><li>Generate → 나온 열쇠를 복사해서 아래에 붙여 넣기</li></ol>
+        <div style="display:flex;gap:8px;margin-top:12px"><input id="tokIn" type="password" placeholder="github_pat_…" style="flex:1;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 12px" autocomplete="off"><button class="btn pri" id="tokSave">연결</button></div>
+        <p class="note">열쇠는 이 브라우저에만 저장되고, 이 저장소 하나만 읽고 쓸 수 있어요. 남에게 보여 주지 마세요.</p>`}</div>
+      <div class="card"><h2>사이클</h2>
+        <label class="field"><span>사이클 이름</span><input data-set="cycleName" value="${esc(s.cycleName)}"></label>
+        <div class="row2"><label class="field"><span>촬영일</span><input type="date" data-set="filmDate" value="${esc(s.filmDate)}"></label>
+        <label class="field"><span>첫 게시일</span><input type="date" data-set="start" value="${esc(s.start)}"></label></div>
+        <div class="row2"><label class="field"><span>사이클 길이(편)</span><input type="number" min="1" max="31" data-set="cycleLen" value="${esc(s.cycleLen)}"></label>
+        <label class="field"><span>게시 시간</span><input type="time" data-set="postingTime" value="${esc(s.postingTime)}"></label></div>
+        <button class="btn" id="newCycle">게시 끝난 편 보관 → 새 사이클 시작</button></div>
+      <div class="card"><h2>백업</h2><p class="meta" style="margin-bottom:10px">전체 내용을 파일로 받아 두거나, 받아 둔 파일로 되돌려요.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="exp">내보내기</button><label class="btn">불러오기<input type="file" id="imp" accept=".json" hidden></label></div></div>
+      <div class="card"><h2>분류</h2>${D.categories.map((c, i) => `<div style="display:flex;gap:8px;margin-bottom:8px"><input type="color" value="${c.color}" data-catc="${i}" style="width:44px;height:38px;border:none;background:none"><input value="${esc(c.name)}" data-catn="${i}" style="flex:1;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 10px"></div>`).join("")}
+        <button class="btn sm" id="addCat">+ 분류 추가</button></div>
+    </div>`;
+  const tokSave = $("#tokSave");
+  if (tokSave) tokSave.onclick = async () => { const v = $("#tokIn").value.trim(); if (!v) return; ls.set(TK, v); setState("", "연결 확인 중…");
+    const localCopy = D; await loadData();
+    if (mode === "github") { toast("연결됐어요! 깃허브 내용을 불러왔어요"); } else { ls.del(TK); D = localCopy; toast("연결에 실패했어요. 열쇠와 권한을 확인해 주세요"); }
+    renderAll(); };
+  const out = $("#tokOut"); if (out) out.onclick = () => { if (confirm("이 기기에서 연결을 끊을까요? (저장된 내용은 깃허브에 그대로 있어요)")) { ls.del(TK); mode = "local"; setState("warn", "이 기기에만 저장 중"); renderAll(); } };
+  document.querySelectorAll("[data-set]").forEach(el => el.onchange = () => { D.settings[el.dataset.set] = el.type === "number" ? +el.value : el.value; changed(); renderAll(); });
+  document.querySelectorAll("[data-catn]").forEach(el => el.onchange = () => { D.categories[+el.dataset.catn].name = el.value; changed(); renderAll(); });
+  document.querySelectorAll("[data-catc]").forEach(el => el.onchange = () => { D.categories[+el.dataset.catc].color = el.value; changed(); renderAll(); });
+  $("#addCat").onclick = () => { D.categories.push({ id: newId(), name: "새 분류", color: "#CCCCCC" }); changed(); renderAll(); };
+  $("#exp").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(D, null, 1)], { type: "application/json" })); a.download = `dashboard-${TODAY}.json`; a.click(); };
+  $("#imp").onchange = async e => { const f = e.target.files[0]; if (!f) return; try { const v = JSON.parse(await f.text()); if (!v.contents) throw 0; if (confirm("지금 내용을 이 파일로 바꿀까요?")) { D = v; changed(); renderAll(); toast("불러왔어요"); } } catch (err) { toast("파일을 읽지 못했어요"); } };
+  $("#newCycle").onclick = () => {
+    const done = D.queue.filter(id => D.contents[id].stages.post);
+    if (!done.length) { toast("게시 완료된 편이 없어요"); return; }
+    if (!confirm(`게시 끝난 ${done.length}편을 보관함으로 옮기고, 남은 순서로 새 사이클을 시작할까요?\n(촬영일·첫 게시일은 직접 다시 정해 주세요)`)) return;
+    D.archive.push(...done); D.queue = D.queue.filter(id => !done.includes(id));
+    const n = parseInt((D.settings.cycleName || "").match(/\d+/)?.[0] || "1", 10) + 1; D.settings.cycleName = `${n}차 사이클`;
+    changed(); renderAll(); };
+}
 
-document.addEventListener("change", e => { const t = e.target.dataset.t; if (!t) return; local["t:" + t] = e.target.checked; save(); renderAll(); });
+/* ───────── 편집 창 ───────── */
+function openModal(html) { $("#modalRoot").innerHTML = `<div class="modal" id="modal"><div class="panel">${html}</div></div>`; document.body.style.overflow = "hidden"; }
+function closeModal() { $("#modalRoot").innerHTML = ""; document.body.style.overflow = ""; }
+function editContent(id) {
+  const c = D.contents[id], P = plan()[id];
+  const where = D.queue.includes(id) ? "queue" : (D.backlog.includes(id) ? "backlog" : "archive");
+  const mrow = (m, i) => `<tr><td><input type="date" data-m="${i}:date" value="${esc(m.date)}"></td>${["views","likes","comments","shares","saves"].map(k => `<td><input inputmode="numeric" data-m="${i}:${k}" value="${esc(m[k] ?? "")}"></td>`).join("")}<td><button class="btn sm danger" data-mdel="${i}">×</button></td></tr>`;
+  openModal(`
+    <div class="ph"><h2>${P?.slot ? `${P.slot}번 · ` : ""}${where === "backlog" ? "예비 콘텐츠" : where === "archive" ? "보관된 콘텐츠" : "게시 순서"}</h2><button class="btn" data-close>닫기</button></div>
+    ${P?.post ? `<p class="meta" style="margin:-4px 0 12px">촬영 ${md(P.film)} · 편집 ${md(P.edit)} · <b>게시 ${md(P.post)} (${wd(P.post)}) ${esc(D.settings.postingTime)}</b></p>` : ""}
+    <label class="field"><span>제목</span><input data-f="title" value="${esc(c.title)}"></label>
+    <div class="row2"><label class="field"><span>분류</span><select data-f="cat">${D.categories.map(x => `<option value="${x.id}" ${x.id === c.cat ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></label>
+    <label class="field"><span>댓글 키워드</span><input data-f="keyword" value="${esc(c.keyword)}"></label></div>
+    <label class="field"><span>첫 3초 훅</span><input data-f="hook" value="${esc(c.hook)}"></label>
+    <label class="field"><span>대본</span><textarea class="script" data-f="script" placeholder="[훅]&#10;[1]&#10;[2]&#10;[3]&#10;[끝] 댓글에 '키워드' 남겨 주세요">${esc(c.script)}</textarea></label>
+    <label class="field"><span>가이드 제목</span><input data-f="guide" value="${esc(c.guide)}"></label>
+    <label class="field"><span>메모 (촬영 소품, 화면 녹화할 것 등)</span><textarea data-f="notes">${esc(c.notes)}</textarea></label>
+    <div class="field"><span>진행 단계</span><div class="stages">${STAGES.map(([s, n]) => `<button class="stg ${c.stages?.[s] ? "on" : ""}" data-stg="${s}">${n}</button>`).join("")}</div></div>
+    <label class="field"><span>영상 링크</span><div style="display:flex;gap:8px"><input data-f="link" value="${esc(c.link)}" placeholder="https://www.instagram.com/reel/…" style="flex:1">${c.link ? `<a class="btn" href="${esc(c.link)}" target="_blank" rel="noopener">열기</a>` : ""}</div></label>
+    <div class="field"><span>숫자 기록 (날짜별로 쌓여요)</span><div style="overflow-x:auto"><table class="mtab"><tr><th>날짜</th><th class="num">조회</th><th class="num">좋아요</th><th class="num">댓글</th><th class="num">공유</th><th class="num">저장</th><th></th></tr>
+      ${(c.metrics || []).map(mrow).join("")}</table></div><button class="btn sm" id="madd" style="justify-self:start">+ 오늘 숫자 추가</button></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+      ${where !== "queue" ? `<button class="btn lime" data-move="queue">게시 순서 맨 뒤로</button>` : `<button class="btn" data-move="backlog">예비로 빼기</button>`}
+      <button class="btn danger" data-del>삭제</button></div>`);
+  const pnl = $("#modal .panel");
+  pnl.querySelectorAll("[data-f]").forEach(el => el.oninput = () => { c[el.dataset.f] = el.value; changed(); });
+  pnl.querySelectorAll("[data-f]").forEach(el => el.onchange = () => renderAll());
+  pnl.querySelectorAll("[data-stg]").forEach(el => el.onclick = () => { c.stages[el.dataset.stg] = !c.stages[el.dataset.stg]; el.classList.toggle("on"); changed(); renderAll(); });
+  pnl.querySelectorAll("[data-m]").forEach(el => el.onchange = () => { const [i, k] = el.dataset.m.split(":"); c.metrics[+i][k] = k === "date" ? el.value : (el.value === "" ? "" : +el.value.replace(/[^\d]/g, "")); changed(); renderAll(); });
+  pnl.querySelectorAll("[data-mdel]").forEach(el => el.onclick = () => { c.metrics.splice(+el.dataset.mdel, 1); changed(); renderAll(); editContent(id); });
+  $("#madd").onclick = () => { (c.metrics = c.metrics || []).push({ date: TODAY, views: "", likes: "", comments: "", shares: "", saves: "" }); changed(); editContent(id); };
+  pnl.querySelectorAll("[data-move]").forEach(el => el.onclick = () => { D.queue = D.queue.filter(x => x !== id); D.backlog = D.backlog.filter(x => x !== id); D.archive = D.archive.filter(x => x !== id);
+    (el.dataset.move === "queue" ? D.queue : D.backlog).push(id); changed(); renderAll(); editContent(id); });
+  pnl.querySelector("[data-del]").onclick = () => { if (!confirm(`'${c.title}'을(를) 삭제할까요? 되돌릴 수 없어요.`)) return;
+    D.queue = D.queue.filter(x => x !== id); D.backlog = D.backlog.filter(x => x !== id); D.archive = D.archive.filter(x => x !== id); delete D.contents[id]; changed(); closeModal(); renderAll(); };
+}
+function newIdea() {
+  const id = newId();
+  D.contents[id] = { id, title: "", cat: D.categories[0]?.id || "", hook: "", keyword: "", guide: "", script: "", notes: "", stages: Object.fromEntries(STAGES.map(([s]) => [s, false])), link: "", metrics: [] };
+  D.backlog.unshift(id); changed(); renderAll(); editContent(id);
+  setTimeout(() => document.querySelector('[data-f="title"]')?.focus(), 50);
+}
+
+/* ───────── 공통 ───────── */
+function renderAll() {
+  const s = D.settings;
+  $("#cycleMeta").textContent = s.start ? `${s.cycleName || ""} · 촬영 ${md(s.filmDate)} · 첫 게시 ${md(s.start)} · ${s.cycleLen}편` : "설정에서 사이클을 정해 주세요";
+  renderToday(); renderBoard(); renderSchedule(); renderStats(); renderSheet(); renderSettings();
+}
 document.addEventListener("click", e => {
-  const b = e.target.closest("button"); if (!b) return;
+  const b = e.target.closest("[data-tab],[data-open],[data-close],[data-act],[data-sheet],.item");
+  if (e.target.id === "modal") { closeModal(); return; }
+  if (!b) return;
   if (b.dataset.tab) { document.querySelectorAll("nav button").forEach(x => x.classList.toggle("on", x === b));
-    ["today","schedule","contents","sheet"].forEach(id => document.getElementById(id).classList.toggle("hidden", id !== b.dataset.tab));
-    try { localStorage.setItem(KEY + ":tab", b.dataset.tab); } catch (err) {} }
-  if (b.dataset.s) { const [no, st] = b.dataset.s.split(":"); local[`s:${no}:${st}`] = !stageOn(no, st); save(); renderAll(); }
-  if (b.dataset.f) { filter = b.dataset.f; renderContents(); }
-  if (b.id === "resetLocal" && confirm("이 기기에 저장된 체크를 모두 지울까요? (원본 일정은 그대로예요)")) { local = {}; save(); renderAll(); }
+    ["today","board","schedule","stats","sheet","settings"].forEach(id => $("#" + id).classList.toggle("hidden", id !== b.dataset.tab)); ls.set(TABK, b.dataset.tab); return; }
+  if (b.dataset.close !== undefined) { closeModal(); return; }
+  if (b.dataset.act === "new") { newIdea(); return; }
+  if (b.dataset.sheet !== undefined) { editSheet(b.dataset.sheet === "new" ? "new" : +b.dataset.sheet); return; }
+  if (b.dataset.open) { editContent(b.dataset.open); return; }
+  if (b.classList.contains("item") && !e.target.closest(".handle")) editContent(b.dataset.id);
 });
+document.addEventListener("change", e => {
+  const k = e.target.dataset.task; if (!k) return;
+  const [date, i] = k.split("|"), t = DAYS.find(d => d.date === date)?.tasks[+i] || days().find(d => d.date === date)?.tasks[+i]; if (!t) return;
+  if (t.ids && t.stage) t.ids.forEach(id => { if (D.contents[id]) D.contents[id].stages[t.stage] = e.target.checked; });
+  else { D.checks = D.checks || {}; D.checks[t.text] = e.target.checked; }
+  changed(); renderAll();
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
 
-fetch("data.json?v=" + Date.now()).then(r => r.json()).then(data => {
-  D = data; load();
-  document.getElementById("cycleMeta").textContent = `${D.cycle.name} · 촬영 ${md(D.cycle.filmDate)} · 게시 ${md(D.cycle.start)}~${md(D.cycle.end)}`;
-  document.getElementById("updated").textContent = `업데이트 ${D.updated}`;
+(async () => {
+  await loadData();
+  if (!D.contents) D = structuredClone(DEFAULT);
   renderAll();
-  try { const t = localStorage.getItem(KEY + ":tab"); if (t) document.querySelector(`nav button[data-tab="${t}"]`)?.click(); } catch (err) {}
-}).catch(() => { document.getElementById("today").innerHTML = '<div class="card">데이터를 불러오지 못했어요. 새로고침해 주세요.</div>'; });
+  const t = ls.get(TABK); if (t) document.querySelector(`nav button[data-tab="${t}"]`)?.click();
+  if (mode !== "github" && !ls.get(TK)) document.querySelector('nav button[data-tab="settings"]').click();
+})();
 </script>
 </body>
 </html>
